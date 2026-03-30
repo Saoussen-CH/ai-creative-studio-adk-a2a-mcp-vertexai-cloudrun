@@ -479,7 +479,10 @@ User: "Create complete campaign with posts and timeline"
 - Uses `McpToolset` with `StdioConnectionParams` to spawn MCP server as subprocess
 - Creates project and task pages in two separate Notion databases
 
-**MCP Tools Exposed** (via `@notionhq/notion-mcp-server`):
+**How MCP works here**:
+The agent connects to `@notionhq/notion-mcp-server` via stdio. The server returns a list of tools with their descriptions — the LLM reads these and decides which to call based on the task. No tool sequence is hardcoded in the agent.
+
+**Tools advertised by `@notionhq/notion-mcp-server`** (the LLM picks from these):
 - `API-post-page`: Create new pages in databases (projects or tasks)
 - `API-patch-page`: Update existing pages
 - `API-post-search`: Search for existing pages
@@ -488,32 +491,34 @@ User: "Create complete campaign with posts and timeline"
 
 **Notion Database Structure**:
 
-**TWO DATABASES REQUIRED:**
+**TWO DATABASES REQUIRED** — the agent discovers their schemas dynamically at runtime using `API-retrieve-a-database`, so property names can be anything. The default template uses:
 
-1. **Projects Database** (ID from `NOTION_DATABASE_ID` environment variable)
-   - **"Project name"**: title (required - campaign name)
-   - **"Status"**: status (e.g., "In progress", "Completed")
-   - **"Priority"**: select (options: "High", "Medium", "Low")
-   - **"Dates"**: date (start and end: `{"start": "2025-12-19", "end": "2026-01-02"}`)
-   - **"Summary"**: rich_text (brief project description)
+1. **Projects Database** (ID from `NOTION_PROJECT_DATABASE_ID` environment variable)
+   - One title property (campaign name)
+   - One status property (e.g., "In progress", "Completed")
+   - One select property for priority (e.g., "High", "Medium", "Low")
+   - One date property with start and end (e.g., campaign dates)
+   - One rich_text property for summary
 
-2. **Tasks Database** (hardcoded ID: `2ceb1b31123181508894ddb3c597dc48`)
-   - **"Task name"**: title (required - task description)
-   - **"Status"**: status (options: "Not started", "In progress", "Done")
-   - **"Priority"**: select (options: "High", "Medium", "Low")
-   - **"Due"**: date (task deadline: `{"start": "2025-12-25"}`)
-   - **"Project"**: relation (links to project page in Projects database)
+2. **Tasks Database** (ID from `NOTION_TASKS_DATABASE_ID` environment variable)
+   - One title property (task description)
+   - One status property (e.g., "Not started", "In progress", "Done")
+   - One select property for priority
+   - One date property for deadline
+   - One relation property linking to the Projects database
+
+> **Dynamic schema discovery**: the agent never hardcodes property names. The MCP server exposes `API-retrieve-a-database` as a tool — the LLM calls it autonomously to read exact property names and valid values before writing. Rename your properties to any language — the agent adapts automatically.
 
 **Environment Variables**:
 - `NOTION_API_KEY`: Notion integration token (passed as `NOTION_TOKEN` to MCP server)
-- `NOTION_DATABASE_ID`: Database ID for the **Projects** database (Tasks DB ID is hardcoded)
+- `NOTION_PROJECT_DATABASE_ID`: Database ID for the **Projects** database
+- `NOTION_TASKS_DATABASE_ID`: Database ID for the **Tasks** database
 
 **Workflow**:
-1. Agent generates text-based project timeline (primary deliverable)
-2. Creates project page in Projects database
-3. Extracts project page ID from API response
-4. Creates 5-10 task pages in Tasks database
-5. Links each task to project using the "Project" relation property
+1. ADK connects the agent to the MCP server at startup — the server advertises its available tools
+2. The LLM receives the task and decides which MCP tools to call and in what order
+3. Typically: discovers schemas → creates project page → creates task pages linked to the project
+4. Generates the text timeline regardless of whether Notion operations succeed
 
 **Input**: Receives complete campaign details from conversation history
 
@@ -649,10 +654,11 @@ GOOGLE_API_KEY="your-gemini-api-key"
 
 # Notion Integration (for Project Manager)
 # IMPORTANT: You need TWO databases:
-# 1. Projects Database (provide ID here)
-# 2. Tasks Database (hardcoded in agent.py:59 - update if different)
+# 1. Projects Database (ID from NOTION_PROJECT_DATABASE_ID)
+# 2. Tasks Database (ID from NOTION_TASKS_DATABASE_ID)
 NOTION_API_KEY="your-notion-integration-token"
-NOTION_DATABASE_ID="your-projects-database-id"
+NOTION_PROJECT_DATABASE_ID="your-projects-database-id"
+NOTION_TASKS_DATABASE_ID="your-tasks-database-id"
 
 # Agent URLs (will be filled after deployment)
 STRATEGIST_AGENT_URL=""
@@ -815,7 +821,7 @@ python3 deploy_orchestrator.py --action deploy
   - `GOOGLE_GENAI_USE_VERTEXAI=true`
   - `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`
   - `NOTION_API_KEY` (Project Manager only - for Notion MCP integration)
-  - `NOTION_DATABASE_ID` (Project Manager only - Projects database ID)
+  - `NOTION_PROJECT_DATABASE_ID` (Project Manager only - Projects database ID)
 
 **Creative Director** → Vertex AI Agent Engine:
 - Managed agent runtime
@@ -1226,7 +1232,7 @@ agent = Agent(
     name="project_manager",
     model="gemini-2.5-flash",
     tools=[notion_toolset],
-    instruction=get_system_instruction(database_id=os.getenv("NOTION_DATABASE_ID"))
+    instruction=get_system_instruction(database_id=os.getenv("NOTION_PROJECT_DATABASE_ID"))
 )
 ```
 
@@ -1242,7 +1248,7 @@ RUN npm install -g @notionhq/notion-mcp-server@1.9.1
 
 **Environment Variables Required**:
 - `NOTION_API_KEY`: Your Notion integration token (passed as `NOTION_TOKEN` to MCP server)
-- `NOTION_DATABASE_ID`: The **Projects** database ID
+- `NOTION_PROJECT_DATABASE_ID`: The **Projects** database ID
 - **Tasks Database ID**: Hardcoded in `agent.py:59` (default: `2ceb1b31123181508894ddb3c597dc48`)
 
 **Available MCP Operations**:

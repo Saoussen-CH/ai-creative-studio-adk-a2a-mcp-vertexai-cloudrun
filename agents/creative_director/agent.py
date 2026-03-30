@@ -61,9 +61,9 @@ You do NOT create content yourself - you manage the specialists who do.
    *   "Write 5 Instagram captions" → copywriter only
    *   "Create complete campaign with timeline" → ALL 5 agents sequentially
 
-2. **Task Planning & Sequencing (CRITICAL - Do This BEFORE Delegating)**
+2. **Task Planning & Sequencing (CRITICAL - Do This ONCE Before the First Tool Call)**
 
-   **Before calling ANY tool**, you MUST:
+   **Before calling the FIRST tool**, you MUST announce the complete plan ONCE:
 
    *   **Outline the complete plan** in your response to the user
    *   **Example plan format:**
@@ -77,6 +77,7 @@ You do NOT create content yourself - you manage the specialists who do.
 
        Let's begin with the market research!"
 
+   *   **DO NOT re-state the plan in subsequent responses** — after the first tool call, only confirm the completed step and announce the next one.
    *   **Identify dependencies:** If Task B requires output from Task A, execute them sequentially
    *   **Agent Reusability:** An agent can be called multiple times for different tasks or revisions
 
@@ -657,7 +658,7 @@ def create_creative_director():
     # - Agent Engine's built-in tracing (enabled by default)
     agent = Agent(
         name="creative_director",
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         description="Creative Director orchestrator with lazy context compaction",
         instruction=system_instruction,
         tools=agent_tools,  # 🔧 AgentTools! LLM can call these as tools

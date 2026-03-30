@@ -211,9 +211,32 @@ def deploy_orchestrator(auto_deploy_specialists=False):
         print(f"  - CRITIC_AGENT_URL={CRITIC_URL or '(not set)'}")
         print(f"  - PM_AGENT_URL={PM_URL or '(not set)'}")
 
-        print("\nUpdate your .env file with:")
-        print(f'AGENT_ENGINE_RESOURCE_NAME="{resource_name}"')
-        print(f'AGENT_ENGINE_ID="{agent_engine_id}"')
+        # Write resource name and ID to .env in-place
+        env_path = Path(__file__).parent.parent / ".env"
+        if env_path.exists():
+            lines = env_path.read_text().splitlines(keepends=True)
+            updates = {
+                "AGENT_ENGINE_RESOURCE_NAME": resource_name,
+                "AGENT_ENGINE_ID": agent_engine_id,
+            }
+            updated = []
+            replaced = set()
+            for line in lines:
+                key = line.split("=", 1)[0].strip()
+                if key in updates:
+                    updated.append(f"{key}={updates[key]}\n")
+                    replaced.add(key)
+                else:
+                    updated.append(line)
+            for key, value in updates.items():
+                if key not in replaced:
+                    updated.append(f"{key}={value}\n")
+            env_path.write_text("".join(updated))
+            print(f"\n✓ Updated .env with Agent Engine resource name and ID")
+        else:
+            print("\nUpdate your .env file with:")
+            print(f'AGENT_ENGINE_RESOURCE_NAME="{resource_name}"')
+            print(f'AGENT_ENGINE_ID="{agent_engine_id}"')
 
         print("\nView in Cloud Console:")
         print(

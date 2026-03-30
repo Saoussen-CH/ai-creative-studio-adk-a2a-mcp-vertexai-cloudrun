@@ -14,8 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Notion MCP server globally
-RUN npm install -g @notionhq/notion-mcp-server@1.9.1
+# Install Notion MCP server globally and clean npm cache
+RUN npm install -g @notionhq/notion-mcp-server@1.9.1 \
+    && npm cache clean --force
+
+# Ensure npm global bin is on PATH
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

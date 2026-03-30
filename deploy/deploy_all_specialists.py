@@ -110,14 +110,17 @@ async def deploy_single_agent(
     # Add Notion credentials for project-manager agent
     if name == "project-manager":
         notion_api_key = os.getenv("NOTION_API_KEY")
-        notion_database_id = os.getenv("NOTION_DATABASE_ID")
+        notion_database_id = os.getenv("NOTION_PROJECT_DATABASE_ID")
+        notion_tasks_db_id = os.getenv("NOTION_TASKS_DATABASE_ID")
 
         if notion_api_key and notion_database_id:
             print(f"   Adding Notion MCP credentials to {name}...")
-            env_vars += f",NOTION_API_KEY={notion_api_key},NOTION_DATABASE_ID={notion_database_id}"
+            env_vars += f",NOTION_API_KEY={notion_api_key},NOTION_PROJECT_DATABASE_ID={notion_database_id}"
+            if notion_tasks_db_id:
+                env_vars += f",NOTION_TASKS_DATABASE_ID={notion_tasks_db_id}"
         else:
             print(
-                f"   Warning: NOTION_API_KEY or NOTION_DATABASE_ID not set - {name} will work without Notion integration"
+                f"   Warning: NOTION_API_KEY or NOTION_PROJECT_DATABASE_ID not set - {name} will work without Notion integration"
             )
 
     cmd = [
@@ -221,14 +224,14 @@ async def update_agent_a2a_config(
     # Add Notion credentials for project-manager agent
     if service_name == "project-manager":
         notion_api_key = os.getenv("NOTION_API_KEY")
-        notion_database_id = os.getenv("NOTION_DATABASE_ID")
+        notion_database_id = os.getenv("NOTION_PROJECT_DATABASE_ID")
 
         if notion_api_key and notion_database_id:
             print(f"   Adding Notion MCP credentials to {service_name}...")
-            env_vars_update += f",NOTION_API_KEY={notion_api_key},NOTION_DATABASE_ID={notion_database_id}"
+            env_vars_update += f",NOTION_API_KEY={notion_api_key},NOTION_PROJECT_DATABASE_ID={notion_database_id}"
         else:
             print(
-                f"   Warning: NOTION_API_KEY or NOTION_DATABASE_ID not set - {service_name} will work without Notion integration"
+                f"   Warning: NOTION_API_KEY or NOTION_PROJECT_DATABASE_ID not set - {service_name} will work without Notion integration"
             )
 
     cmd = [
@@ -266,6 +269,21 @@ async def deploy_all_agents(project_id: str, region: str) -> dict[str, str]:
     print("\n" + "=" * 70)
     print("Deploying all specialist agents to Cloud Run (in parallel)")
     print("=" * 70 + "\n")
+
+    # Pre-create the Artifact Registry repository to avoid race condition
+    # when all 5 parallel deploys try to create it simultaneously
+    print("⏳ Pre-creating Artifact Registry repository...")
+    _, _, ar_err = await run_command_async([
+        "gcloud", "artifacts", "repositories", "create", "cloud-run-source-deploy",
+        "--repository-format=docker",
+        f"--location={region}",
+        f"--project={project_id}",
+        "--quiet",
+    ])
+    if ar_err and "ALREADY_EXISTS" not in ar_err:
+        print(f"   Warning: {ar_err.strip()}")
+    else:
+        print("   ✓ Artifact Registry repository ready")
 
     # Deploy all agents in parallel using asyncio.gather
     tasks = [deploy_single_agent(agent, project_id, region) for agent in AGENTS]
@@ -332,11 +350,11 @@ async def main_async():
             print("\n❌ No agents were deployed successfully")
             sys.exit(1)
 
-        # Save URLs to file for orchestrator deployment
-        env_utils.save_urls_to_env_file(agent_urls)
+        # Update .env in-place with Cloud Run URLs (replaces localhost values)
+        env_utils.update_env_file_with_urls(agent_urls)
 
         print("\n✓ All specialist agents are ready!")
-        print("  URLs saved to .env.specialists")
+        print("  URLs written to .env")
 
         return agent_urls
 
