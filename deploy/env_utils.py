@@ -114,6 +114,42 @@ def get_agent_name_mapping() -> dict[str, str]:
     }
 
 
+def update_env_file_with_urls(agent_urls: dict[str, str]) -> None:
+    """
+    Update the main .env file in-place, replacing agent URL values.
+    All other settings (project ID, credentials, etc.) are preserved.
+
+    Args:
+        agent_urls: Dict mapping agent names to URLs
+    """
+    env_vars = format_env_vars_for_orchestrator(agent_urls)
+    env_path = Path(__file__).parent.parent / ".env"
+
+    if not env_path.exists():
+        print(f"⚠️  .env not found at {env_path}, skipping in-place update")
+        return
+
+    lines = env_path.read_text().splitlines(keepends=True)
+    updated = []
+    replaced = set()
+
+    for line in lines:
+        key = line.split("=", 1)[0].strip()
+        if key in env_vars and env_vars[key]:
+            updated.append(f"{key}={env_vars[key]}\n")
+            replaced.add(key)
+        else:
+            updated.append(line)
+
+    # Append any keys that weren't already in the file
+    for key, value in env_vars.items():
+        if key not in replaced and value:
+            updated.append(f"{key}={value}\n")
+
+    env_path.write_text("".join(updated))
+    print(f"✓ Updated agent URLs in {env_path}")
+
+
 def save_urls_to_env_file(
     agent_urls: dict[str, str], output_file: str = ".env.specialists"
 ) -> None:

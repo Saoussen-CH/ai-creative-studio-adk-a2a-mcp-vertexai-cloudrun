@@ -5,7 +5,8 @@ refs/
 prez_youtube/
 medium/
 a2a-inspector/
-docs/
+workshop/conference-submission.md
+workshop/PUBLISH.md
 
 # Local test/scratch files
 test_*_local.py
@@ -91,6 +92,13 @@ htmlcov/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Videos
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
 
 # Temporary files
 *.tmp
