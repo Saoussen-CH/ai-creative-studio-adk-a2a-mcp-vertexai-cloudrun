@@ -365,199 +365,65 @@ INFO: Uvicorn running on http://localhost:8000
 
       </google-codelab-step>
     
-      <google-codelab-step label="Build the Copywriter - ADK Skills" duration="3">
-        <p><strong>Role:</strong> Turn brand research into Instagram captions. The Copywriter creates 3 caption variations covering different tones (inspirational, educational, community), each with hashtags and a CTA.</p>
-<h2 is-upgraded>Concept: ADK Skills</h2>
-<p>A naive approach would embed all platform knowledge - character limits, hashtag tiers, caption formulas, brand voice examples - directly in the system prompt. That works, but bloats every request with content the agent only needs occasionally.</p>
-<p><strong>ADK Skills</strong> (<code>SkillToolset</code>, introduced in ADK 1.25.0) let you package that knowledge into modular files with three levels of loading:</p>
-<ul>
-<li><strong>L1 - frontmatter</strong> (<code>name</code> + <code>description</code> in <code>SKILL.md</code>): always available, used for skill discovery</li>
-<li><strong>L2 - instructions</strong> (body of <code>SKILL.md</code>): loaded when the agent triggers the skill</li>
-<li><strong>L3 - resources</strong> (<code>references/</code> and <code>assets/</code> files): loaded only when the agent explicitly reads them</li>
-</ul>
-<p>The system instruction shrinks to a short role statement plus &#34;load the skill before writing&#34;. Platform details only enter the context window when the agent actually needs them.</p>
-<p>The Copywriter&#39;s skill lives in <code>agents/copywriter/skills/instagram-copywriting/</code>:</p>
-<pre><code language="language-text" class="language-text">skills/
-  instagram-copywriting/
-    SKILL.md                       ← L1 frontmatter (discovery) + L2 instructions (loaded on trigger)
-    references/
-      platform-guide.md            ← L3: character limits, hashtag tiers, algorithm signals
-      caption-formulas.md          ← L3: hook formulas, CTA patterns, full caption structures
-    assets/
-      brand-voice-examples.md      ← L3: annotated real-world caption examples
+      <google-codelab-step label="Meet the Copywriter, Designer &amp; Critic" duration="5">
+        <p>These three specialist agents are pre-built and ready to use. This section explains what each one does and how it is implemented so you can understand the system before wiring them together in the orchestrator.</p>
+<h2 is-upgraded>The Copywriter</h2>
+<p><strong>Role:</strong> Turns brand research into Instagram captions. Produces exactly 3 caption variations - one inspirational, one educational, one community-focused - each with hashtags and a CTA.</p>
+<p><strong>Implementation:</strong> The Copywriter uses <strong>ADK Skills</strong> to keep its system prompt lean. Instead of embedding platform rules (character limits, caption formulas, brand voice examples) directly in the instruction, that knowledge lives in a separate skill directory that is loaded on demand:</p>
+<pre><code language="language-text" class="language-text">agents/copywriter/skills/instagram-copywriting/
+  SKILL.md           ← L1 frontmatter (discovery) + L2 instructions (loaded when triggered)
+  references/
+    platform-guide.md      ← L3: character limits, hashtag tiers, algorithm signals
+    caption-formulas.md    ← L3: hook formulas, CTA patterns
+  assets/
+    brand-voice-examples.md  ← L3: annotated real-world caption examples
 </code></pre>
-<p>Open the file directly in the Cloud Shell editor:</p>
-<pre><code language="language-bash" class="language-bash">cloudshell edit agents/copywriter/agent.py
-</code></pre>
-<h2 is-upgraded>TODO 1 - Import <code>load_skill_from_dir</code> and <code>skill_toolset</code></h2>
-<p>Find the comment <code># TODO: Import load_skill_from_dir and skill_toolset</code> and add the two imports:</p>
-<pre><code language="language-python" class="language-python">from google.adk.skills import load_skill_from_dir
-from google.adk.tools import skill_toolset
-</code></pre>
-<h2 is-upgraded>TODO 2 - Load the skill and create a SkillToolset</h2>
-<p>Find the two comments below the imports:</p>
-<pre><code language="language-python" class="language-python"># TODO: Load the instagram-copywriting skill from the skills/ directory
-# TODO: Create a SkillToolset with the loaded skill
-</code></pre>
-<p>Replace them with:</p>
+<p><code>load_skill_from_dir</code> reads the directory and <code>SkillToolset</code> wraps it into the format the agent accepts. Platform details only enter the context window when the agent needs them, not on every request.</p>
 <pre><code language="language-python" class="language-python">_instagram_skill = load_skill_from_dir(
     pathlib.Path(__file__).parent / &#34;skills&#34; / &#34;instagram-copywriting&#34;
 )
 _copywriting_skills = skill_toolset.SkillToolset(skills=[_instagram_skill])
-</code></pre>
-<p><code>load_skill_from_dir</code> reads <code>SKILL.md</code> plus any files in <code>references/</code> and <code>assets/</code>. <code>SkillToolset</code> wraps it into the format ADK agents accept - a toolset, not a raw skill.</p>
-<h2 is-upgraded>TODO 3 - Register the toolset with the agent</h2>
-<p>Find <code>tools=[],  # TODO: Add the SkillToolset here</code> and replace it with:</p>
-<pre><code language="language-python" class="language-python">tools=[_copywriting_skills],
-</code></pre>
-<p>Open the skill file to see how it is structured:</p>
-<pre><code language="language-bash" class="language-bash">cloudshell edit agents/copywriter/skills/instagram-copywriting/SKILL.md
-</code></pre>
-<p>Keep the ADK web UI running. Use the <strong>agent dropdown</strong> to switch to <strong><code>copywriter</code></strong> without restarting the server.</p>
-<p>If it&#39;s not running, start it again:</p>
-<pre><code language="language-bash" class="language-bash">uv run adk web agents --allow_origins=&#39;*&#39;
-</code></pre>
-<p><strong>Try it:</strong> Switch the dropdown to <strong><code>copywriter</code></strong> and send:</p>
-<pre><code>You are writing captions for EcoFlow Smart Water Bottle targeting health-conscious millennials aged 25-35.
-Audience insight: they prioritize sustainability, track health metrics, and share lifestyle content.
-Competitor insight: Hydro Flask dominates with lifestyle branding; S&#39;well leads on premium aesthetics.
-Write 3 Instagram captions - one inspirational, one educational, one community-focused. Include 5 hashtags each and a CTA.
-</code></pre>
-<aside class="special"><p><strong>No shared memory.</strong> Notice you had to paste the audience and competitor insights manually - the Copywriter has no idea what the Brand Strategist produced unless the orchestrator explicitly forwards it. In a multi-agent workflow, context passing is entirely the orchestrator&#39;s responsibility. That&#39;s the Creative Director&#39;s job, which you&#39;ll build next.</p>
-</aside>
 
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Build the Designer - Multimodal Image Generation" duration="5">
-        <p>Keep the ADK web UI running. Use the <strong>agent dropdown</strong> to switch agents without restarting the server.</p>
-<p><strong>Role:</strong> Create visual concepts for each caption and generate the actual images using Gemini native image generation. The Designer outputs 2-3 visual concepts per caption - each with a detailed prompt, style, color palette, mood, and Instagram format - then calls the <code>generate_image</code> tool to produce a real image and upload it to GCS.</p>
-<h2 is-upgraded>Concept: Bridging a text agent with an image model via a tool</h2>
-<p>The Designer runs on <code>gemini-3.1-flash-preview</code> (the text model set via <code>GEMINI_MODEL</code> in <code>.env</code>), but image generation requires a dedicated model (<code>gemini-3.1-flash-image-preview</code>). That image model doesn&#39;t support function calling, so it can&#39;t be used directly as an ADK agent. Instead, it&#39;s wrapped in a plain Python function and registered as a <code>FunctionTool</code>.</p>
-<p>This is the pattern for any model or API that the LLM can&#39;t call directly: wrap it in a tool, let the agent orchestrate when to call it, and get a structured result back.</p>
+root_agent = Agent(
+    name=&#34;copywriter&#34;,
+    tools=[_copywriting_skills],
+    ...
+)
+</code></pre>
+<h2 is-upgraded>The Designer</h2>
+<p><strong>Role:</strong> For each caption, creates one visual concept - a detailed image generation prompt, style, color palette, mood, and Instagram format - then calls the <code>generate_image</code> tool to produce a real image and upload it to GCS.</p>
+<p><strong>Implementation:</strong> The Designer runs on the text model (<code>GEMINI_MODEL</code>), but image generation requires a dedicated model (<code>GEMINI_IMAGE_MODEL</code>) that does not support function calling and cannot be used as an ADK agent directly. It is wrapped in a plain <code>FunctionTool</code> instead:</p>
 <pre><code language="language-text" class="language-text">Designer agent (text model)
-        │
-        │  decides visual concept, writes image prompt
+        │  decides concept, writes image prompt
         ▼
   generate_image tool
-        │
         │  calls gemini-3.1-flash-image-preview
-        │  uploads result to GCS
+        │  uploads PNG/JPG to GCS
         ▼
   {&#34;status&#34;: &#34;success&#34;, &#34;gcs_uri&#34;: &#34;gs://...&#34;}
-        │
-        │  returned to agent, included in response
-        ▼
-  Critic (receives gcs_uri, passes to Vertex AI for multimodal review)
 </code></pre>
-<h2 is-upgraded>TODO - Implement <code>generate_image</code></h2>
-<p>Open the file directly in the Cloud Shell editor:</p>
-<pre><code language="language-bash" class="language-bash">cloudshell edit agents/designer/image_gen_tool.py
-</code></pre>
-<p>The function signature, environment setup, and aspect ratio injection are provided. Fill in the three TODOs:</p>
-<p><strong>TODO 1 - Call the Gemini image model:</strong></p>
-<pre><code language="language-python" class="language-python">        client = genai.Client(vertexai=True, project=project_id, location=location)
-
-        response = client.models.generate_content(
-            model=image_model,
-            contents=prompt_with_aspect,
-            config=types.GenerateContentConfig(
-                response_modalities=[&#34;IMAGE&#34;, &#34;TEXT&#34;],
-                http_options=types.HttpOptions(
-                    retry_options=types.HttpRetryOptions(
-                        attempts=5, exp_base=2, initial_delay=30,
-                        http_status_codes=[429, 500, 503, 504],
-                    ),
-                    timeout=180_000,
-                ),
-            ),
-        )
-</code></pre>
-<aside class="special"><p><strong>Why </strong><strong><code>initial_delay=30</code></strong><strong> here?</strong> Image generation quota on Dynamic Shared Quota recovers slowly compared to text models. A 30-second base delay gives the shared pool time to refill between retries. The text model retry config uses <code>initial_delay=5</code> - not enough for image quota.</p>
-</aside>
-<p><strong>TODO 2 - Extract image bytes from the response:</strong></p>
-<pre><code language="language-python" class="language-python">        image_bytes = None
-        mime_type = &#34;image/png&#34;
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                image_bytes = part.inline_data.data
-                mime_type = part.inline_data.mime_type or &#34;image/png&#34;
-                break
-
-        if not image_bytes:
-            return {&#34;status&#34;: &#34;error&#34;, &#34;error&#34;: &#34;Gemini returned no image data&#34;}
-</code></pre>
-<p><strong>TODO 3 - Upload to GCS and return the URI:</strong></p>
-<pre><code language="language-python" class="language-python">        ext = &#34;jpg&#34; if &#34;jpeg&#34; in mime_type else &#34;png&#34;
-        from google.cloud import storage
-        gcs_client = storage.Client(project=project_id)
-        bucket = gcs_client.bucket(bucket_name)
-        blob_name = f&#34;campaign-images/{concept_name}-{uuid.uuid4().hex[:8]}.{ext}&#34;
-        blob = bucket.blob(blob_name)
-        blob.upload_from_file(io.BytesIO(image_bytes), content_type=mime_type)
-        gcs_uri = f&#34;gs://{bucket_name}/{blob_name}&#34;
-</code></pre>
-<p><strong>Try it:</strong> Switch the dropdown to <strong><code>designer</code></strong> and send:</p>
-<pre><code>Create 2 visual concepts for an EcoFlow Smart Water Bottle Instagram post targeting health-conscious millennials.
-Style: clean, modern, lifestyle-focused. Include prompts with color palette, mood, and format (1080x1080 or 1080x1350).
-</code></pre>
-<aside class="special"><p><strong>Images appear inline in </strong><strong><code>adk web</code></strong><strong>.</strong> After uploading to GCS, <code>generate_image</code> also saves the image bytes as an ADK artifact via <code>tool_context.save_artifact(...)</code>. The <code>adk web</code> server uses an in-memory artifact service that renders these as thumbnails directly in the chat UI. On Cloud Run there is no artifact service, so the call raises <code>ValueError</code>, which the tool catches and ignores - the <code>gcs_uri</code> is always returned regardless.</p>
-</aside>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Build the Critic - Structured Output" duration="6">
-        <p><strong>Role:</strong> Quality-assure copy and visuals before they&#39;re handed to the Project Manager. The Critic scores both deliverables and returns <code>APPROVED</code> or <code>NEEDS_REVISION</code> with specific suggestions. When <code>gcs_uri</code> values are present in the input, it calls the <code>review_image</code> tool to visually inspect each generated image before scoring.</p>
-<h2 is-upgraded>Concept: When to use a Pydantic model for Gemini output</h2>
-<p>The rule is about <strong>who consumes the output</strong>:</p>
-<ul>
-<li><strong>Python code consumes it</strong> → use <code>response_schema</code> + Pydantic. Code can&#39;t handle ambiguity, so you need a guaranteed structure to extract fields reliably.</li>
-<li><strong>An LLM consumes it</strong> → text format + system instruction is enough. LLMs understand formatting rules and tolerate variation.</li>
-</ul>
-<p>In <code>review_image</code>, Python code needs <code>score</code>, <code>approval_status</code>, <code>what_works</code>, <code>issues</code>, and <code>suggestions</code> as typed values. Passing <code>response_schema=_GeminiReview</code> constrains Gemini at the API level to return valid JSON; <code>model_validate_json()</code> parses it into a typed object your code can use reliably.</p>
+<p>The tool uses a 30-second retry delay for image quota - image generation quota on Dynamic Shared Quota recovers slowly, so <code>initial_delay=30</code> is essential to avoid cascading 429 errors.</p>
+<h2 is-upgraded>The Critic</h2>
+<p><strong>Role:</strong> Reviews copy and visuals before they reach the Project Manager. Scores each deliverable from 1-10, returns <code>APPROVED</code> or <code>NEEDS_REVISION</code>, and provides specific suggestions. When <code>gcs_uri</code> values are present, it calls <code>review_image</code> to visually inspect each image with Gemini multimodal before scoring.</p>
+<p><strong>Implementation:</strong> The <code>review_image</code> tool uses a Pydantic model as a <code>response_schema</code> to constrain Gemini&#39;s output to typed JSON. This is the right pattern when <strong>Python code</strong> consumes the result - code cannot handle format variation, so the structure is enforced at the API level:</p>
 <pre><code language="language-python" class="language-python">class _GeminiReview(BaseModel):
     score: int = Field(ge=1, le=10)
     approval_status: Literal[&#34;APPROVED&#34;, &#34;NEEDS_REVISION&#34;]
     what_works: str
     issues: str
     suggestions: str
+
+response = client.models.generate_content(
+    model=model,
+    contents=[image_part, prompt],
+    config=types.GenerateContentConfig(
+        response_schema=_GeminiReview,
+        response_mime_type=&#34;application/json&#34;,
+    ),
+)
+review = _GeminiReview.model_validate_json(response.text)
 </code></pre>
-<aside class="special"><p><strong>Contrast:</strong> the Critic&#39;s final review is read by the Creative Director - another LLM. A text format enforced in the system instruction is enough there. No schema needed when the consumer is an LLM, not code.</p>
-</aside>
-<h2 is-upgraded>TODO - Implement <code>review_image</code></h2>
-<p>Open the file directly in the Cloud Shell editor:</p>
-<pre><code language="language-bash" class="language-bash">cloudshell edit agents/critic/image_review_tool.py
-</code></pre>
-<p>The Pydantic models and prompt are provided. Fill in the three TODOs:</p>
-<p><strong>TODO 1 - Create an image part from the GCS URI:</strong></p>
-<pre><code language="language-python" class="language-python">        image_part = types.Part.from_uri(file_uri=gcs_uri, mime_type=mime_type)
-</code></pre>
-<aside class="special"><p><strong>Multimodal review via GCS. </strong><code>Part.from_uri()</code> passes the image as a GCS reference. Vertex AI fetches it server-side - the Critic container never downloads the image directly, so no Cloud Storage credentials are needed on the Critic service.</p>
-</aside>
-<p><strong>TODO 2 - Call Gemini with a structured response schema:</strong></p>
-<pre><code language="language-python" class="language-python">        response = client.models.generate_content(
-            model=model,
-            contents=[image_part, prompt],
-            config=types.GenerateContentConfig(
-                response_schema=_GeminiReview,
-                response_mime_type=&#34;application/json&#34;,
-            ),
-        )
-</code></pre>
-<aside class="special"><p><strong>Structured output via Pydantic.</strong> Passing <code>response_schema=_GeminiReview</code> forces Gemini to return valid JSON matching the Pydantic model. No regex, no prompt-engineering the format - the model is constrained at the API level.</p>
-</aside>
-<p><strong>TODO 3 - Parse the response and return the result:</strong></p>
-<pre><code language="language-python" class="language-python">        review = _GeminiReview.model_validate_json(response.text)
-        return ImageReviewResult(status=&#34;success&#34;, concept_name=concept_name, **review.model_dump())
-</code></pre>
-<p><strong>Try it:</strong> Switch the dropdown to <strong><code>critic</code></strong> and send:</p>
-<pre><code>Review this Instagram caption for an eco-friendly water bottle brand targeting millennials:
-&#34;Hydrate smarter, live greener. 💧 Our EcoFlow bottle tracks your intake, keeps your drink cold for 24h, and never touches single-use plastic. Because what you drink from matters as much as what you drink. #EcoFlow #HydrationGoals #SustainableLiving #ZeroWaste #HealthyHabits - Shop link in bio.&#34;
-Score it and indicate APPROVED or NEEDS_REVISION with specific feedback.
-</code></pre>
-<p>Verify the response contains <code>**POSTS REVIEW:**</code>, <code>Status: APPROVED</code> (or <code>NEEDS_REVISION</code>), and <code>**OVERALL ASSESSMENT:**</code>. If those sections are present, the Critic is ready to plug into the orchestrator.</p>
-<p>When you&#39;re done testing all three agents, press <code>Ctrl+C</code> to stop the server.</p>
+<p><code>Part.from_uri()</code> passes the GCS image reference to Vertex AI, which fetches it server-side - no Cloud Storage credentials are needed on the Critic container.</p>
 
 
       </google-codelab-step>
