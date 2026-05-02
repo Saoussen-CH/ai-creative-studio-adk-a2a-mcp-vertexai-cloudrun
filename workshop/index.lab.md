@@ -178,11 +178,11 @@ This codelab uses a **starter repository** - a skeleton project with all the inf
 pyproject.toml, deploy scripts) but with the agent logic left for you to write.
 
 ```bash
-git clone -b feature/copywriter-skills https://github.com/Saoussen-CH/ai-creative-studio-adk-a2a-mcp-vertexai-cloudrun.git ~/ai-creative-studio
+git clone -b workshop-release https://github.com/Saoussen-CH/ai-creative-studio-adk-a2a-mcp-vertexai-cloudrun.git ~/ai-creative-studio
 cd ~/ai-creative-studio/workshop/starter
 ```
 
-Each `agent.py` contains `# TODO` placeholders where you will write the agent logic. The `Dockerfile`, `pyproject.toml`, and deploy scripts are already complete.
+The Brand Strategist, Project Manager, and Creative Director `agent.py` files contain `# TODO` placeholders for you to fill in. The Copywriter, Designer, and Critic are pre-built. The `Dockerfile`, `pyproject.toml`, and deploy scripts are already complete.
 
 ### Configure environment variables
 
