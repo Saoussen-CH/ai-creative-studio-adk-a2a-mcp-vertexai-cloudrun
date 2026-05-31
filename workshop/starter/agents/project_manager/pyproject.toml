@@ -7,4 +7,5 @@ dependencies = [
     "google-adk[a2a]==1.31.1",
     "uvicorn[standard]>=0.25.0",
     "python-dotenv>=1.0.0",
+    "mcp>=1.0.0",
 ]
