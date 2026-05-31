@@ -4,7 +4,8 @@ import pathlib
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
-from google.adk.skills import SkillToolset, load_skill_from_dir
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
 
 try:
     from .retry import GENERATE_CONTENT_CONFIG
