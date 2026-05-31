@@ -23,7 +23,7 @@ resource_name = (
 )
 
 agent_engine = client.agent_engines.get(name=resource_name)
-session = agent_engine.create_session(user_id="workshop-user")
+session = agent_engine.create_session(user_id="campaign-user")
 print(f"Session: {session['id']}\n")
 
 campaign_brief = """
@@ -38,7 +38,7 @@ Create a complete Instagram campaign for:
 """
 
 for event in agent_engine.stream_query(
-    user_id="workshop-user",
+    user_id="campaign-user",
     session_id=session["id"],
     message=campaign_brief,
 ):

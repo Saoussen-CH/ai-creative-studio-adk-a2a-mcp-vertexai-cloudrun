@@ -59,23 +59,23 @@ Creative Director (ADK App + EventsCompactionConfig)
 ## Repository Structure
 
 ```
-workshop/starter/
-  agents/
-    creative_director/     - orchestrator; EventsCompactionConfig; display_image + get_image_links tools
-    brand_strategist/      - Google Search grounding; structured market research output
-    copywriter/            - ADK Skills (instagram-copywriting); 3 caption tonal registers
-      skills/
-        instagram-copywriting/
-    designer/              - Imagen 3 image generation; GCS upload; ADK artifact save
-    critic/                - multimodal image review via Part.from_uri; structured JSON scoring
-    project_manager/       - phase/task/budget timeline; Notion MCP (optional)
-  deploy/
-    deploy_all_specialists.py   - deploys all 5 specialist agents to Cloud Run
-    deploy_orchestrator.py      - deploys Creative Director to Agent Platform Runtime
-    env_utils.py
-  pyproject.toml
-  .env.example
-  run_campaign.py              - runs a campaign against a deployed Agent Platform Runtime instance
+agents/
+  creative_director/     - orchestrator; EventsCompactionConfig; display_image + get_image_links tools
+  brand_strategist/      - Google Search grounding; structured market research output
+  copywriter/            - ADK Skills (instagram-copywriting); 3 caption tonal registers
+    skills/
+      instagram-copywriting/
+  designer/              - Imagen 3 image generation; GCS upload; ADK artifact save
+  critic/                - multimodal image review via Part.from_uri; structured JSON scoring
+  project_manager/       - phase/task/budget timeline; Notion MCP (optional)
+deploy/
+  deploy_all_specialists.py   - deploys all 5 specialist agents to Cloud Run
+  deploy_orchestrator.py      - deploys Creative Director to Agent Platform Runtime
+  env_utils.py
+  teardown_gcp.sh
+pyproject.toml
+.env.example
+run_campaign.py          - run a campaign against a deployed Agent Platform Runtime instance
 ```
 
 ## Setup
@@ -93,7 +93,6 @@ git clone https://github.com/Saoussen-CH/mas-a2a-gcp.git
 cd mas-a2a-gcp
 git checkout feature/full-implementation
 
-cd workshop/starter
 uv sync
 cp .env.example .env
 # Fill in GOOGLE_CLOUD_PROJECT, GCS_IMAGES_BUCKET, and GEMINI_MODEL
