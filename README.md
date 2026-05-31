@@ -48,7 +48,7 @@ Creative Director (ADK App + EventsCompactionConfig)
 
 - **[Google ADK](https://adk.dev) 1.31.1** - agent framework, A2A, Skills, MCP toolsets
 - **Gemini 2.5 Flash** on Vertex AI - all text agents
-- **Imagen 3** (`gemini-3.1-flash-image-preview`) - image generation
+- **Imagen 3** (`gemini-3.1-flash-image`) - image generation
 - **Cloud Run** - each specialist agent as an independent HTTPS service
 - **Gemini Enterprise Agent Platform Runtime** - Creative Director orchestrator
 - **Cloud Storage** - generated image storage
@@ -133,7 +133,7 @@ GOOGLE_CLOUD_LOCATION=global
 CLOUD_RUN_REGION=us-central1
 GCS_IMAGES_BUCKET=your-project-id-campaign-images
 GEMINI_MODEL=gemini-2.5-flash
-GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 
 # Auto-populated by deployment scripts
 COPYWRITER_AGENT_URL=

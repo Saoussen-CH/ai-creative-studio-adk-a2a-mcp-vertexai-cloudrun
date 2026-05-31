@@ -33,10 +33,10 @@ async def generate_image(
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
     location = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
     # Use a dedicated image-capable model; separate from the text GEMINI_MODEL.
-    # gemini-3.1-flash-image-preview does NOT support function calling, so it cannot
+    # gemini-3.1-flash-image does NOT support function calling, so it cannot
     # be used as an ADK agent - but calling it directly here is fine.
     image_model = os.environ.get(
-        "GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image-preview"
+        "GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image"
     )
 
     # Aspect ratio is not an API parameter for Gemini native generation - inject it
