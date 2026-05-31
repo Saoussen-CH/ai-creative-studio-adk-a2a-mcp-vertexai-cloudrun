@@ -4,8 +4,7 @@ import pathlib
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
-
-# TODO 1: Import load_skill_from_dir and skill_toolset
+from google.adk.skills import SkillToolset, load_skill_from_dir
 
 try:
     from .retry import GENERATE_CONTENT_CONFIG
@@ -16,10 +15,10 @@ load_dotenv()
 
 logger = logging.getLogger("ai_creative_studio.copywriter")
 
-# TODO 2: Load the instagram-copywriting skill from the skills/ directory
-
-# TODO 2: Create a SkillToolset with the loaded skill
-
+_skill = load_skill_from_dir(
+    pathlib.Path(__file__).parent / "skills" / "instagram-copywriting"
+)
+_skill_toolset = SkillToolset(skills=[_skill])
 
 SYSTEM_INSTRUCTION = """You are an expert Social Media Copywriter specializing in Instagram content.
 
@@ -32,15 +31,32 @@ guidelines, caption formulas, and brand voice examples before writing.
 
 Your task: Create exactly 3 Instagram caption variations covering different tonal registers.
 Follow the output format defined in the skill exactly.
+
+Each caption must include:
+- The full caption text (with line breaks, emojis, and relevant hashtags)
+- A label for the tonal register (e.g., "Inspirational", "Educational", "Playful")
+- A strong call-to-action (CTA)
+- 8-12 targeted hashtags
+
+Format for each caption:
+
+**Caption [N] - [Tonal Register]:**
+[Full caption text]
+
+[CTA line]
+
+[Hashtag block]
+
+---
 """
 
 root_agent = Agent(
     name="copywriter",
     model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     generate_content_config=GENERATE_CONTENT_CONFIG,
-    tools=[],  # TODO 3: Add the SkillToolset here
+    tools=[_skill_toolset],
     instruction=SYSTEM_INSTRUCTION,
-    description="Expert social media copywriter for creating engaging captions and copy",
+    description="Expert social media copywriter for creating engaging Instagram captions and copy",
 )
 
 logger.info("Copywriter agent created with instagram-copywriting skill")

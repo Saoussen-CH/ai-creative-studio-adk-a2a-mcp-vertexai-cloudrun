@@ -42,23 +42,55 @@ def create_creative_director():
         FunctionTool(func=get_image_links),
     ]
 
-    # TODO 2: For each specialist URL that is set, create a RemoteA2aAgent
-    # and wrap it in an AgentTool, then append to agent_tools.
-    #
-    # Pattern for each specialist:
-    #
-    # if strategist_url:
-    #     available_agents_list.append(
-    #         "- **brand_strategist**: Researches market trends, competitors, and audience insights"
-    #     )
-    #     strategist_agent = RemoteA2aAgent(
-    #         name="brand_strategist",
-    #         description="Brand strategist for market research and competitive insights",
-    #         agent_card=f"{strategist_url}/.well-known/agent.json",
-    #     )
-    #     agent_tools.append(AgentTool(agent=strategist_agent))
-    #
-    # Repeat for: copywriter_url, designer_url, critic_url, pm_url
+    if strategist_url:
+        available_agents_list.append(
+            "- **brand_strategist**: Researches market trends, competitor brands, and audience insights"
+        )
+        agent_tools.append(AgentTool(agent=RemoteA2aAgent(
+            name="brand_strategist",
+            description="Brand strategist for market research and competitive insights",
+            agent_card=f"{strategist_url}/.well-known/agent.json",
+        )))
+
+    if copywriter_url:
+        available_agents_list.append(
+            "- **copywriter**: Writes 3 Instagram caption variations with CTAs and hashtags"
+        )
+        agent_tools.append(AgentTool(agent=RemoteA2aAgent(
+            name="copywriter",
+            description="Expert social media copywriter for creating engaging Instagram captions",
+            agent_card=f"{copywriter_url}/.well-known/agent.json",
+        )))
+
+    if designer_url:
+        available_agents_list.append(
+            "- **designer**: Generates visual concepts and real images via Imagen, returns gcs_uri values"
+        )
+        agent_tools.append(AgentTool(agent=RemoteA2aAgent(
+            name="designer",
+            description="Visual designer that generates Instagram images using Imagen",
+            agent_card=f"{designer_url}/.well-known/agent.json",
+        )))
+
+    if critic_url:
+        available_agents_list.append(
+            "- **critic**: Reviews posts and visuals, scores them, and flags what needs revision"
+        )
+        agent_tools.append(AgentTool(agent=RemoteA2aAgent(
+            name="critic",
+            description="Creative critic for reviewing campaign materials and providing structured feedback",
+            agent_card=f"{critic_url}/.well-known/agent.json",
+        )))
+
+    if pm_url:
+        available_agents_list.append(
+            "- **project_manager**: Creates campaign timeline, task list, and optionally persists to Notion"
+        )
+        agent_tools.append(AgentTool(agent=RemoteA2aAgent(
+            name="project_manager",
+            description="Project manager for creating campaign timelines and Notion project pages",
+            agent_card=f"{pm_url}/.well-known/agent.json",
+        )))
 
     available_agents_text = (
         "\n".join(available_agents_list)
@@ -89,31 +121,22 @@ def create_creative_director():
         generate_content_config=generation_config,
     )
 
-    # TODO 3: Wrap the agent in an App with EventsCompactionConfig
-    # This prevents token limit failures in long 5-agent workflows.
-    #
-    # Hint:
-    # from google.adk.apps import App
-    # from google.adk.apps.app import EventsCompactionConfig
-    # from google.adk.apps.llm_event_summarizer import LlmEventSummarizer
-    # from google.adk.models import Gemini
-    #
-    # compaction_config = EventsCompactionConfig(
-    #     summarizer=LlmEventSummarizer(llm=Gemini(model_id="gemini-2.5-flash")),
-    #     compaction_interval=3,
-    #     overlap_size=1,
-    # )
-    # app = App(
-    #     name="creative_director",
-    #     root_agent=agent,
-    #     events_compaction_config=compaction_config,
-    #     plugins=[LoggingPlugin()],
-    # )
-    # return agent, app
-
-    # Placeholder return until App is configured
     from google.adk.apps import App
-    app = App(name="creative_director", root_agent=agent, plugins=[LoggingPlugin()])
+    from google.adk.apps.app import EventsCompactionConfig
+    from google.adk.apps.llm_event_summarizer import LlmEventSummarizer
+    from google.adk.models import Gemini
+
+    compaction_config = EventsCompactionConfig(
+        summarizer=LlmEventSummarizer(llm=Gemini(model_id=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))),
+        compaction_interval=3,
+        overlap_size=1,
+    )
+    app = App(
+        name="creative_director",
+        root_agent=agent,
+        events_compaction_config=compaction_config,
+        plugins=[LoggingPlugin()],
+    )
     return agent, app
 
 

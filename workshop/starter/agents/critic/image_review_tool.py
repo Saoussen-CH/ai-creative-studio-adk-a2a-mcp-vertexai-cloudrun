@@ -56,9 +56,7 @@ def review_image(gcs_uri: str, concept_name: str, campaign_context: str) -> Imag
         mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
         mime_type = mime_map.get(ext, "image/png")
 
-        # TODO 1: Create an image part from the GCS URI using Part.from_uri().
-        # Pass file_uri=gcs_uri and mime_type=mime_type.
-        # Vertex AI fetches the image server-side - no GCS credentials needed here.
+        image_part = types.Part.from_uri(file_uri=gcs_uri, mime_type=mime_type)
 
         prompt = f"""You are reviewing an AI-generated image for an Instagram campaign.
 
@@ -78,18 +76,17 @@ Scoring guide:
 - 1-4:  NEEDS_REVISION (significant issues)
 """
 
-        # TODO 2: Call client.models.generate_content() with:
-        #   - model=model
-        #   - contents=[image_part, prompt]
-        #   - config=types.GenerateContentConfig(
-        #       response_schema=_GeminiReview,
-        #       response_mime_type="application/json",
-        #     )
-        # Store the result in `response`.
+        response = client.models.generate_content(
+            model=model,
+            contents=[image_part, prompt],
+            config=types.GenerateContentConfig(
+                response_schema=_GeminiReview,
+                response_mime_type="application/json",
+            ),
+        )
 
-        # TODO 3: Parse the response and return an ImageReviewResult.
-        # Use _GeminiReview.model_validate_json(response.text) to parse structured output.
-        # Return ImageReviewResult(status="success", concept_name=concept_name, **review.model_dump())
+        review = _GeminiReview.model_validate_json(response.text)
+        return ImageReviewResult(status="success", concept_name=concept_name, **review.model_dump())
 
     except Exception as e:
         return ImageReviewResult(
