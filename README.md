@@ -83,8 +83,21 @@ run_campaign.py          - run a campaign against a deployed Agent Platform Runt
 ### Prerequisites
 
 - Google Cloud project with billing enabled
-- APIs enabled: Vertex AI, Cloud Run, Cloud Storage, Secret Manager
+- APIs enabled: Vertex AI, Cloud Run, Cloud Storage, Secret Manager, Artifact Registry, Cloud Build
 - `gcloud` CLI authenticated (`gcloud auth application-default login`)
+
+Enable all required APIs in one command:
+
+```bash
+gcloud services enable \
+  aiplatform.googleapis.com \
+  run.googleapis.com \
+  storage.googleapis.com \
+  secretmanager.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  --project=your-project-id
+```
 
 ### Local Development
 
@@ -96,6 +109,24 @@ git checkout feature/full-implementation
 uv sync
 cp .env.example .env
 # Fill in GOOGLE_CLOUD_PROJECT, GCS_IMAGES_BUCKET, and GEMINI_MODEL
+```
+
+Create the GCS buckets (replace `your-project-id`):
+
+```bash
+export PROJECT_ID=your-project-id
+
+# Bucket for generated images (set as GCS_IMAGES_BUCKET in .env)
+gcloud storage buckets create gs://${PROJECT_ID}-campaign-images \
+  --project=${PROJECT_ID} \
+  --location=us-central1 \
+  --uniform-bucket-level-access
+
+# Staging bucket for Agent Platform Runtime deployment
+gcloud storage buckets create gs://${PROJECT_ID}-agent-staging \
+  --project=${PROJECT_ID} \
+  --location=us-central1 \
+  --uniform-bucket-level-access
 ```
 
 Run locally with `adk web` (tests the Creative Director with all specialists as local agents):
@@ -132,7 +163,7 @@ GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=global
 CLOUD_RUN_REGION=us-central1
 GCS_IMAGES_BUCKET=your-project-id-campaign-images
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3-flash-preview
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 
 # Auto-populated by deployment scripts
