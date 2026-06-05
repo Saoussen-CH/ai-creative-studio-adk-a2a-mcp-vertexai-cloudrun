@@ -83,25 +83,11 @@ run_campaign.py          - run a campaign against a deployed Agent Platform Runt
 ### Prerequisites
 
 - Google Cloud project with billing enabled
-- APIs enabled: Vertex AI, Cloud Run, Cloud Storage, Secret Manager, Artifact Registry, Cloud Build
-- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- `gcloud` CLI authenticated (`gcloud auth application-default login`)
-- Node.js + npm (only if using Notion integration - to run `notion-mcp-server` locally)
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) - `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- `gcloud` CLI - authenticated with `gcloud auth login && gcloud auth application-default login`
+- Node.js + npm - only required for local Notion integration
 
-Enable all required APIs in one command:
-
-```bash
-gcloud services enable \
-  aiplatform.googleapis.com \
-  run.googleapis.com \
-  storage.googleapis.com \
-  secretmanager.googleapis.com \
-  artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com \
-  --project=your-project-id
-```
-
-### Local Development
+### Step 1 - Clone and install
 
 ```bash
 git clone https://github.com/Saoussen-CH/mas-a2a-gcp.git
@@ -112,31 +98,41 @@ uv sync
 cp .env.example .env
 ```
 
-Set your project ID and write all required values into `.env`:
+### Step 2 - Set project variables
 
 ```bash
 export PROJECT_ID=your-project-id
 export REGION=us-central1
 export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+```
 
-# Write core config into .env
-sed -i "s/GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=${PROJECT_ID}/" .env
-sed -i "s/GOOGLE_CLOUD_PROJECT_NUMBER=.*/GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}/" .env
-sed -i "s/CLOUD_RUN_REGION=.*/CLOUD_RUN_REGION=${REGION}/" .env
-sed -i "s/GCS_IMAGES_BUCKET=.*/GCS_IMAGES_BUCKET=${PROJECT_ID}-campaign-images/" .env
+### Step 3 - Enable required GCP APIs
 
-# Required for signed image URLs when running locally with user ADC
-sed -i "s|SIGNING_SERVICE_ACCOUNT=.*|SIGNING_SERVICE_ACCOUNT=${PROJECT_NUMBER}-compute@developer.gserviceaccount.com|" .env
-
-# Grant your user account permission to impersonate that SA for blob signing
-gcloud iam service-accounts add-iam-policy-binding \
-  ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com \
-  --member="user:$(gcloud config get-value account)" \
-  --role="roles/iam.serviceAccountTokenCreator" \
+```bash
+gcloud services enable \
+  aiplatform.googleapis.com \
+  run.googleapis.com \
+  storage.googleapis.com \
+  secretmanager.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
   --project=${PROJECT_ID}
 ```
 
-Create the GCS buckets:
+### Step 4 - Configure .env
+
+> On macOS replace `sed -i` with `sed -i ''`
+
+```bash
+sed -i "s/GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=${PROJECT_ID}/" .env
+sed -i "s/GOOGLE_CLOUD_PROJECT_NUMBER=.*/GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}/" .env
+sed -i "s/CLOUD_RUN_REGION=.*/CLOUD_RUN_REGION=${REGION}/" .env
+sed -i "s/GOOGLE_CLOUD_LOCATION=.*/GOOGLE_CLOUD_LOCATION=global/" .env
+sed -i "s/GCS_IMAGES_BUCKET=.*/GCS_IMAGES_BUCKET=${PROJECT_ID}-campaign-images/" .env
+sed -i "s|SIGNING_SERVICE_ACCOUNT=.*|SIGNING_SERVICE_ACCOUNT=${PROJECT_NUMBER}-compute@developer.gserviceaccount.com|" .env
+```
+
+### Step 5 - Create GCS buckets
 
 ```bash
 # Bucket for generated images
@@ -145,20 +141,34 @@ gcloud storage buckets create gs://${PROJECT_ID}-campaign-images \
   --location=${REGION} \
   --uniform-bucket-level-access
 
-# Staging bucket for Agent Platform Runtime deployment
+# Staging bucket required by Agent Platform Runtime deployment
 gcloud storage buckets create gs://${PROJECT_ID}-agent-staging \
   --project=${PROJECT_ID} \
   --location=${REGION} \
   --uniform-bucket-level-access
 ```
 
-Run locally with `adk web` (tests the Creative Director with all specialists as local agents):
+### Step 6 - Grant IAM permissions for signed URLs (local dev)
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com \
+  --member="user:$(gcloud config get-value account)" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --project=${PROJECT_ID}
+```
+
+This allows your local user credentials to sign GCS URLs via the Compute Engine default service account.
+
+### Step 7 - Run locally
 
 ```bash
 uv run adk web agents --allow_origins='*'
 ```
 
-### Deploy to GCP
+This starts the Creative Director with all 5 specialists running as local in-process agents.
+
+### Step 8 - Deploy to GCP
 
 Deploy all 5 specialist agents to Cloud Run:
 
@@ -166,13 +176,13 @@ Deploy all 5 specialist agents to Cloud Run:
 uv run python deploy/deploy_all_specialists.py
 ```
 
-Deploy the Creative Director orchestrator to Gemini Enterprise Agent Platform Runtime:
+Deploy the Creative Director orchestrator to Agent Platform Runtime:
 
 ```bash
 uv run python deploy/deploy_orchestrator.py
 ```
 
-Run a full campaign against the deployed system:
+Run a campaign against the deployed system:
 
 ```bash
 uv run python run_campaign.py
