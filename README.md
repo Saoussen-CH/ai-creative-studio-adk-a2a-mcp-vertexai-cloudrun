@@ -84,7 +84,9 @@ run_campaign.py          - run a campaign against a deployed Agent Platform Runt
 
 - Google Cloud project with billing enabled
 - APIs enabled: Vertex AI, Cloud Run, Cloud Storage, Secret Manager, Artifact Registry, Cloud Build
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
 - `gcloud` CLI authenticated (`gcloud auth application-default login`)
+- Node.js + npm (only if using Notion integration - to run `notion-mcp-server` locally)
 
 Enable all required APIs in one command:
 
@@ -108,24 +110,45 @@ git checkout feature/full-implementation
 
 uv sync
 cp .env.example .env
-# Fill in GOOGLE_CLOUD_PROJECT, GCS_IMAGES_BUCKET, and GEMINI_MODEL
 ```
 
-Create the GCS buckets (replace `your-project-id`):
+Set your project ID and write all required values into `.env`:
 
 ```bash
 export PROJECT_ID=your-project-id
+export REGION=us-central1
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
 
-# Bucket for generated images (set as GCS_IMAGES_BUCKET in .env)
+# Write core config into .env
+sed -i "s/GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=${PROJECT_ID}/" .env
+sed -i "s/GOOGLE_CLOUD_PROJECT_NUMBER=.*/GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}/" .env
+sed -i "s/CLOUD_RUN_REGION=.*/CLOUD_RUN_REGION=${REGION}/" .env
+sed -i "s/GCS_IMAGES_BUCKET=.*/GCS_IMAGES_BUCKET=${PROJECT_ID}-campaign-images/" .env
+
+# Required for signed image URLs when running locally with user ADC
+sed -i "s|SIGNING_SERVICE_ACCOUNT=.*|SIGNING_SERVICE_ACCOUNT=${PROJECT_NUMBER}-compute@developer.gserviceaccount.com|" .env
+
+# Grant your user account permission to impersonate that SA for blob signing
+gcloud iam service-accounts add-iam-policy-binding \
+  ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com \
+  --member="user:$(gcloud config get-value account)" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --project=${PROJECT_ID}
+```
+
+Create the GCS buckets:
+
+```bash
+# Bucket for generated images
 gcloud storage buckets create gs://${PROJECT_ID}-campaign-images \
   --project=${PROJECT_ID} \
-  --location=us-central1 \
+  --location=${REGION} \
   --uniform-bucket-level-access
 
 # Staging bucket for Agent Platform Runtime deployment
 gcloud storage buckets create gs://${PROJECT_ID}-agent-staging \
   --project=${PROJECT_ID} \
-  --location=us-central1 \
+  --location=${REGION} \
   --uniform-bucket-level-access
 ```
 
@@ -175,6 +198,9 @@ PM_AGENT_URL=
 AGENT_ENGINE_ID=
 
 # Optional - enables Notion project pages
+# 1. Create an integration at https://www.notion.so/my-integrations
+# 2. Share your databases with the integration
+# 3. Install the MCP server locally: npm install -g @notionhq/notion-mcp-server@1.9.1
 NOTION_TOKEN=
 NOTION_PROJECT_DATABASE_ID=
 NOTION_TASKS_DATABASE_ID=
