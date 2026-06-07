@@ -114,6 +114,7 @@ gcloud services enable \
   aiplatform.googleapis.com \
   run.googleapis.com \
   storage.googleapis.com \
+  iamcredentials.googleapis.com \
   secretmanager.googleapis.com \
   artifactregistry.googleapis.com \
   cloudbuild.googleapis.com \
@@ -129,7 +130,6 @@ sed -i "s/GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=${PROJECT_ID}/" .env
 sed -i "s/GOOGLE_CLOUD_PROJECT_NUMBER=.*/GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER}/" .env
 sed -i "s/CLOUD_RUN_REGION=.*/CLOUD_RUN_REGION=${REGION}/" .env
 sed -i "s/GOOGLE_CLOUD_LOCATION=.*/GOOGLE_CLOUD_LOCATION=global/" .env
-sed -i "s/GCS_IMAGES_BUCKET=.*/GCS_IMAGES_BUCKET=${PROJECT_ID}-campaign-images/" .env
 sed -i "s|SIGNING_SERVICE_ACCOUNT=.*|SIGNING_SERVICE_ACCOUNT=${PROJECT_NUMBER}-compute@developer.gserviceaccount.com|" .env
 ```
 
@@ -147,6 +147,12 @@ gcloud storage buckets create gs://${PROJECT_ID}-agent-staging \
   --project=${PROJECT_ID} \
   --location=${REGION} \
   --uniform-bucket-level-access
+```
+
+Once the buckets are created, record the images bucket name in `.env`:
+
+```bash
+sed -i "s/GCS_IMAGES_BUCKET=.*/GCS_IMAGES_BUCKET=${PROJECT_ID}-campaign-images/" .env
 ```
 
 ### Step 6 - Grant IAM permissions for signed URLs (local dev)
@@ -189,6 +195,8 @@ Run a campaign against the deployed system:
 uv run python run_campaign.py
 ```
 
+The script contains a sample EcoFlow brief. Edit the `campaign_brief` variable in `run_campaign.py` to run your own campaign.
+
 ## Environment Variables
 
 ```bash
@@ -202,6 +210,12 @@ SIGNING_SERVICE_ACCOUNT=your-project-number-compute@developer.gserviceaccount.co
 GEMINI_MODEL=gemini-3-flash-preview
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 GOOGLE_GENAI_USE_VERTEXAI=1
+
+# Observability (OpenTelemetry) - pre-filled in .env.example, no changes needed
+GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY=true
+OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=true
 
 # Auto-populated by deployment scripts
 COPYWRITER_AGENT_URL=
@@ -221,6 +235,58 @@ NOTION_PROJECT_DATABASE_ID=
 NOTION_TASKS_DATABASE_ID=
 ```
 
+## Notion Integration (Optional)
+
+The Project Manager agent can create a structured project page and task list in Notion at the end of each campaign run. Without it, the agent still outputs a full text timeline.
+
+### Step 1 - Create a Notion integration
+
+1. Go to [notion.so/my-integrations](https://www.notion.so/my-integrations) and click **New integration**
+2. Name it `AI Creative Studio`, select your workspace, and click **Save**
+3. Copy the **Internal Integration Token** — this is your `NOTION_TOKEN`
+
+### Step 2 - Set up the databases
+
+You need two databases: one for Projects, one for Tasks. Duplicate the [AI Creative Studio Notion template](https://www.notion.so/templates) or create them manually with these properties:
+
+**Projects database:**
+- `Name` (title)
+- `Status` (select)
+- `Budget` (number)
+- `Timeline` (text)
+
+**Tasks database:**
+- `Name` (title)
+- `Status` (select)
+- `Phase` (select)
+- `Project` (relation → Projects database)
+
+### Step 3 - Share databases with the integration
+
+Open each database, click **...** → **Connections** → search for `AI Creative Studio` → **Confirm**. Do this for both the Projects and Tasks databases.
+
+### Step 4 - Get the database IDs
+
+Open each database in the browser. The URL looks like:
+```
+https://www.notion.so/your-workspace/<DATABASE_ID>?v=...
+```
+Copy the `DATABASE_ID` for each.
+
+### Step 5 - Install the MCP server
+
+```bash
+npm install -g @notionhq/notion-mcp-server@1.9.1
+```
+
+### Step 6 - Set env vars
+
+```bash
+sed -i "s/NOTION_TOKEN=.*/NOTION_TOKEN=your-token/" .env
+sed -i "s/NOTION_PROJECT_DATABASE_ID=.*/NOTION_PROJECT_DATABASE_ID=your-projects-db-id/" .env
+sed -i "s/NOTION_TASKS_DATABASE_ID=.*/NOTION_TASKS_DATABASE_ID=your-tasks-db-id/" .env
+```
+
 ## Image Visibility
 
 Generated images are surfaced at three levels:
@@ -230,6 +296,16 @@ Generated images are surfaced at three levels:
 | ADK artifacts | `save_artifact()` | `adk web` developer UI only |
 | Signed HTTPS URLs | `get_image_links()` via GCS | Any browser, any UI |
 | Notion embed | HTTPS links passed to Project Manager | Notion project page |
+
+## Teardown
+
+To delete all GCP resources created during setup (Cloud Run services, Agent Engine, GCS buckets, Artifact Registry, Secret Manager secrets):
+
+```bash
+bash deploy/teardown_gcp.sh
+```
+
+The script reads `.env` for `GOOGLE_CLOUD_PROJECT` and `AGENT_ENGINE_RESOURCE_NAME`, prompts for confirmation, and prints a summary of what will be deleted before proceeding.
 
 ## Branches
 
