@@ -18,12 +18,12 @@ Submit a campaign brief and the system autonomously:
 
 | Agent | Model | Key Tools |
 |-------|-------|-----------|
-| **Creative Director** | Gemini 2.5 Flash | Orchestrates all specialists via A2A; `display_image`, `get_image_links` |
-| **Brand Strategist** | Gemini 2.5 Flash | `google_search` for real-time market data |
-| **Copywriter** | Gemini 2.5 Flash | ADK Skills (`instagram-copywriting`) |
-| **Designer** | Gemini 2.5 Flash + Imagen | `generate_image` - calls Imagen 3, uploads to GCS |
-| **Critic** | Gemini 2.5 Flash | `review_image` - multimodal review via `Part.from_uri` |
-| **Project Manager** | Gemini 2.5 Flash | Notion MCP toolset (optional) |
+| **Creative Director** | Gemini 3 Flash Preview | Orchestrates all specialists via A2A; `display_image`, `get_image_links` |
+| **Brand Strategist** | Gemini 3 Flash Preview | `google_search` for real-time market data |
+| **Copywriter** | Gemini 3 Flash Preview | ADK Skills (`instagram-copywriting`) |
+| **Designer** | Gemini 3 Flash Preview + Imagen | `generate_image` - calls Imagen 3, uploads to GCS |
+| **Critic** | Gemini 3 Flash Preview | `review_image` - multimodal review via `Part.from_uri` |
+| **Project Manager** | Gemini 3 Flash Preview | Notion MCP toolset (optional) |
 
 ## Architecture
 
@@ -44,10 +44,12 @@ Creative Director (ADK App + EventsCompactionConfig)
  └── Creative Director deployed to Gemini Enterprise Agent Platform Runtime
 ```
 
+![System Architecture](diagrams/ai-creative-studio-architecture.png)
+
 ## Tech Stack
 
 - **[Google ADK](https://adk.dev) 1.31.1** - agent framework, A2A, Skills, MCP toolsets
-- **Gemini 2.5 Flash** on Vertex AI - all text agents
+- **Gemini 3 Flash Preview** (`gemini-3-flash-preview`) on Vertex AI - all text agents
 - **Imagen 3** (`gemini-3.1-flash-image`) - image generation
 - **Cloud Run** - each specialist agent as an independent HTTPS service
 - **Gemini Enterprise Agent Platform Runtime** - Creative Director orchestrator
@@ -90,9 +92,8 @@ run_campaign.py          - run a campaign against a deployed Agent Platform Runt
 ### Step 1 - Clone and install
 
 ```bash
-git clone https://github.com/Saoussen-CH/mas-a2a-gcp.git
-cd mas-a2a-gcp
-git checkout feature/full-implementation
+git clone -b feature/full-implementation https://github.com/Saoussen-CH/ai-creative-studio-adk-a2a-mcp-vertexai-cloudrun.git
+cd ai-creative-studio-adk-a2a-mcp-vertexai-cloudrun
 
 uv sync
 cp .env.example .env
@@ -193,11 +194,14 @@ uv run python run_campaign.py
 ```bash
 # Required
 GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_PROJECT_NUMBER=your-project-number
 GOOGLE_CLOUD_LOCATION=global
 CLOUD_RUN_REGION=us-central1
 GCS_IMAGES_BUCKET=your-project-id-campaign-images
+SIGNING_SERVICE_ACCOUNT=your-project-number-compute@developer.gserviceaccount.com
 GEMINI_MODEL=gemini-3-flash-preview
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
+GOOGLE_GENAI_USE_VERTEXAI=1
 
 # Auto-populated by deployment scripts
 COPYWRITER_AGENT_URL=
@@ -206,6 +210,7 @@ STRATEGIST_AGENT_URL=
 CRITIC_AGENT_URL=
 PM_AGENT_URL=
 AGENT_ENGINE_ID=
+AGENT_ENGINE_RESOURCE_NAME=
 
 # Optional - enables Notion project pages
 # 1. Create an integration at https://www.notion.so/my-integrations
