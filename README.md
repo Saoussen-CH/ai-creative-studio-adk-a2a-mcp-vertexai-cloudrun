@@ -177,7 +177,7 @@ This starts the Creative Director with all 5 specialists running as local in-pro
 
 ### Step 8 - Configure Notion MCP (optional, before deploying)
 
-If you want the Project Manager agent to create Notion pages, complete the **[Notion Integration (Optional)](#notion-integration-optional)** section below now and set `NOTION_TOKEN`, `NOTION_PROJECT_DATABASE_ID`, and `NOTION_TASKS_DATABASE_ID` in `.env` before running the deploy scripts. The deployment passes these values to the Cloud Run service as environment variables — they cannot be added after the fact without redeploying.
+If you want the Project Manager agent to create Notion pages, complete the **[Notion Integration (Optional)](#notion-integration-optional)** section below now and set `NOTION_TOKEN`, `NOTION_PROJECT_DATABASE_ID`, and `NOTION_TASKS_DATABASE_ID` in `.env` before running the deploy scripts. The deployment passes these values to the Cloud Run service as environment variables  -  they cannot be added after the fact without redeploying.
 
 Skip this step if you don't need Notion integration; the agent still outputs a full text timeline.
 
@@ -249,17 +249,17 @@ The Project Manager agent can create a structured project page and task list in 
 
 1. Go to [notion.so/my-integrations](https://www.notion.so/my-integrations) and click **New integration**
 2. Name it `AI Creative Studio`, select your workspace, and click **Save**
-3. Copy the **Internal Integration Token** — this is your `NOTION_TOKEN`
+3. Copy the **Internal Integration Token**  -  this is your `NOTION_TOKEN`
 
 ### Step 2 - Add the Notion Projects & Tasks template
 
-Add the official **[Notion Projects & Tasks](https://www.notion.so/marketplace/templates/notion-projects-and-tasks?cr=pro%3Anotion)** template to your workspace. This gives you two linked databases — **Projects** and **Tasks** — with the property types the agent expects. Once added, delete the sample entries so the agent starts with a clean workspace.
+Add the official **[Notion Projects & Tasks](https://www.notion.so/marketplace/templates/notion-projects-and-tasks?cr=pro%3Anotion)** template to your workspace. This gives you two linked databases  -  **Projects** and **Tasks**  -  with the property types the agent expects. Once added, delete the sample entries so the agent starts with a clean workspace.
 
 ### Step 3 - Share databases with the integration and get their IDs
 
 1. Open the **Projects** database → click `...` → **Connections** → **Add a connection** → select `AI Creative Studio`
 2. Do the same for the **Tasks** database
-3. Open each database in the browser — the URL looks like:
+3. Open each database in the browser  -  the URL looks like:
    ```
    https://www.notion.so/<DATABASE_ID>?v=...
    ```
