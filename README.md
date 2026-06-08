@@ -1,6 +1,6 @@
 # AI Creative Studio - Multi-Agent Instagram Campaign Generator
 
-A fully implemented distributed multi-agent system built with **Google ADK**, the **A2A protocol**, **MCP**, and **Gemini on Vertex AI**. Five specialist AI agents collaborate to produce complete Instagram campaigns - from market research to image generation - coordinated by a Creative Director orchestrator.
+A fully implemented distributed multi-agent system built with **Google ADK**, the **A2A protocol**, **MCP**, and **Gemini on Gemini Enterprise Agent Platform**. Five specialist AI agents collaborate to produce complete Instagram campaigns - from market research to image generation - coordinated by a Creative Director orchestrator.
 
 ---
 
@@ -49,7 +49,7 @@ Creative Director (ADK App + EventsCompactionConfig)
 ## Tech Stack
 
 - **[Google ADK](https://adk.dev) 1.31.1** - agent framework, A2A, Skills, MCP toolsets
-- **Gemini 3 Flash Preview** (`gemini-3-flash-preview`) on Vertex AI - all text agents
+- **Gemini 3 Flash Preview** (`gemini-3-flash-preview`) on Gemini Enterprise Agent Platform - all text agents
 - **Imagen 3** (`gemini-3.1-flash-image`) - image generation
 - **Cloud Run** - each specialist agent as an independent HTTPS service
 - **Gemini Enterprise Agent Platform Runtime** - Creative Director orchestrator
@@ -291,7 +291,7 @@ Generated images are surfaced at three levels:
 
 ## Teardown
 
-To delete all GCP resources created during setup (Cloud Run services, Agent Engine, GCS buckets, Artifact Registry, Secret Manager secrets):
+To delete all GCP resources created during setup (Cloud Run services, Agent Runtime, GCS buckets, Artifact Registry, Secret Manager secrets):
 
 ```bash
 bash deploy/teardown_gcp.sh
