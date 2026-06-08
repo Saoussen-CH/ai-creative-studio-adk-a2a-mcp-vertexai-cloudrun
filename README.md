@@ -245,41 +245,27 @@ The Project Manager agent can create a structured project page and task list in 
 2. Name it `AI Creative Studio`, select your workspace, and click **Save**
 3. Copy the **Internal Integration Token** — this is your `NOTION_TOKEN`
 
-### Step 2 - Set up the databases
+### Step 2 - Add the Notion Projects & Tasks template
 
-You need two databases: one for Projects, one for Tasks. Duplicate the [AI Creative Studio Notion template](https://www.notion.so/templates) or create them manually with these properties:
+Add the official **[Notion Projects & Tasks](https://www.notion.so/marketplace/templates/notion-projects-and-tasks?cr=pro%3Anotion)** template to your workspace. This gives you two linked databases — **Projects** and **Tasks** — with the property types the agent expects. Once added, delete the sample entries so the agent starts with a clean workspace.
 
-**Projects database:**
-- `Name` (title)
-- `Status` (select)
-- `Budget` (number)
-- `Timeline` (text)
+### Step 3 - Share databases with the integration and get their IDs
 
-**Tasks database:**
-- `Name` (title)
-- `Status` (select)
-- `Phase` (select)
-- `Project` (relation → Projects database)
+1. Open the **Projects** database → click `...` → **Connections** → **Add a connection** → select `AI Creative Studio`
+2. Do the same for the **Tasks** database
+3. Open each database in the browser — the URL looks like:
+   ```
+   https://www.notion.so/<DATABASE_ID>?v=...
+   ```
+   Copy the `DATABASE_ID` (the UUID before `?v=`) for each
 
-### Step 3 - Share databases with the integration
-
-Open each database, click **...** → **Connections** → search for `AI Creative Studio` → **Confirm**. Do this for both the Projects and Tasks databases.
-
-### Step 4 - Get the database IDs
-
-Open each database in the browser. The URL looks like:
-```
-https://www.notion.so/your-workspace/<DATABASE_ID>?v=...
-```
-Copy the `DATABASE_ID` for each.
-
-### Step 5 - Install the MCP server
+### Step 4 - Install the MCP server
 
 ```bash
 npm install -g @notionhq/notion-mcp-server@1.9.1
 ```
 
-### Step 6 - Set env vars
+### Step 5 - Set env vars
 
 ```bash
 sed -i "s/NOTION_TOKEN=.*/NOTION_TOKEN=your-token/" .env
