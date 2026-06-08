@@ -177,7 +177,7 @@ This starts the Creative Director with all 5 specialists running as local in-pro
 
 ### Step 8 - Configure Notion MCP (optional, before deploying)
 
-If you want the Project Manager agent to create Notion pages, complete the **Notion Integration** section below now and set `NOTION_TOKEN`, `NOTION_PROJECT_DATABASE_ID`, and `NOTION_TASKS_DATABASE_ID` in `.env` before running the deploy scripts. The deployment passes these values to the Cloud Run service as environment variables — they cannot be added after the fact without redeploying.
+If you want the Project Manager agent to create Notion pages, complete the **[Notion Integration (Optional)](#notion-integration-optional)** section below now and set `NOTION_TOKEN`, `NOTION_PROJECT_DATABASE_ID`, and `NOTION_TASKS_DATABASE_ID` in `.env` before running the deploy scripts. The deployment passes these values to the Cloud Run service as environment variables — they cannot be added after the fact without redeploying.
 
 Skip this step if you don't need Notion integration; the agent still outputs a full text timeline.
 
